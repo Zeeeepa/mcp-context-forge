@@ -1,3 +1,9 @@
+import GanttChart from './gantt-chart.js';
+import FlameGraph from './flame-graph.js';
+
+window.GanttChart = GanttChart;
+window.FlameGraph = FlameGraph;
+
 /* global marked, DOMPurify */
 const MASKED_AUTH_VALUE = "*****";
 

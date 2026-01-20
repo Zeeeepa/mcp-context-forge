@@ -279,3 +279,7 @@ mcpgateway/static/vendor/
 # Generated performance test files
 nginx.conf
 docker-compose.perf.yml
+
+# Vite build output
+mcpgateway/static/bundle.js
+.vite/

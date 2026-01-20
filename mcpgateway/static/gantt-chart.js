@@ -11,7 +11,7 @@
  */
 
 /* eslint-disable no-unused-vars */
-class GanttChart {
+export default class GanttChart {
     constructor(containerId, traceData) {
         this.container = document.getElementById(containerId);
         this.trace = traceData;
@@ -383,6 +383,3 @@ class GanttChart {
     }
 }
 
-// Global instance (will be initialized from template)
-// eslint-disable-next-line prefer-const
-let ganttChart = null;

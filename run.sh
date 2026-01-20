@@ -98,6 +98,17 @@ if ! [[ "$LOG_FORMAT" =~ ^(json|text)$ ]]; then
     exit 1
 fi
 
+# Build admin UI assets if needed
+if [ ! -f "mcpgateway/static/bundle.js" ] || [ "mcpgateway/static/admin.js" -nt "mcpgateway/static/bundle.js" ]; then
+    echo "🎨 Building admin UI assets with Vite..."
+    if command -v npm >/dev/null 2>&1; then
+        npm install --no-save 2>/dev/null || echo "⚠️  npm install failed, continuing..."
+        npm run build:vite || echo "⚠️  Vite build failed, continuing with existing assets..."
+    else
+        echo "⚠️  npm not found, skipping Vite build"
+    fi
+fi
+
 # Create default .env if it doesn't exist
 if [ ! -f "$ENV_FILE" ]; then
     echo "Creating default $ENV_FILE..."

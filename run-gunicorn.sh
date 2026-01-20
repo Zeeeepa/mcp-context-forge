@@ -199,6 +199,17 @@ if ! "${PYTHON}" -c "import sys; sys.exit(0 if sys.version_info[0] >= 3 else 1)"
     exit 1
 fi
 
+# Build admin UI assets if needed
+if [[ ! -f "mcpgateway/static/bundle.js" ]] || [[ "mcpgateway/static/admin.js" -nt "mcpgateway/static/bundle.js" ]]; then
+    echo "🎨 Building admin UI assets with Vite..."
+    if command -v npm >/dev/null 2>&1; then
+        npm install --no-save 2>/dev/null || echo "⚠️  npm install failed, continuing..."
+        npm run build:vite || echo "⚠️  Vite build failed, continuing with existing assets..."
+    else
+        echo "⚠️  npm not found, skipping Vite build"
+    fi
+fi
+
 #────────────────────────────────────────────────────────────────────────────────
 # SECTION 5: Display Application Banner
 # Show a fancy ASCII art banner for the MCP Gateway

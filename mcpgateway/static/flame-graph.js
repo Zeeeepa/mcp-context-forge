@@ -10,7 +10,7 @@
  */
 
 /* eslint-disable no-unused-vars */
-class FlameGraph {
+export default class FlameGraph {
     constructor(containerId, traceData) {
         this.container = document.getElementById(containerId);
         this.trace = traceData;
@@ -335,6 +335,3 @@ class FlameGraph {
     }
 }
 
-// Global instance (will be initialized from template)
-// eslint-disable-next-line prefer-const
-let flameGraph = null;

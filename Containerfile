@@ -87,6 +87,9 @@ COPY . /app
 # Copy Rust plugin wheels from builder (if any exist)
 COPY --from=rust-builder /build/plugins_rust/target/wheels/ /tmp/rust-wheels/
 
+# Install Node.js for building admin UI assets
+RUN microdnf install -y nodejs npm && microdnf clean all
+
 # Create virtual environment, upgrade pip and install dependencies using uv for speed
 # Including observability packages for OpenTelemetry support and Rust plugins (if built)
 # Granian is included as an optional high-performance alternative to Gunicorn
@@ -102,7 +105,11 @@ RUN python3 -m venv /app/.venv && \
     else \
         echo "⏭️  Rust plugins not available - using Python implementations"; \
     fi && \
-    rm -rf /tmp/rust-wheels
+    rm -rf /tmp/rust-wheels && \
+    echo "🎨 Building admin UI assets with Vite..." && \
+    npm install --no-save && \
+    npm run build:vite && \
+    echo "✓ Admin UI assets built successfully"
 
 # update the user permissions
 RUN chown -R 1001:0 /app && \
