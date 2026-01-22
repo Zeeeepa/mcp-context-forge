@@ -1086,6 +1086,9 @@ Admin.retryLoadMetrics = function () {
     Admin.loadAggregatedMetrics();
 }
 
+// Make retry function available globally immediately
+Admin.retryLoadMetrics = retryLoadMetrics;
+
 Admin.showMetricsPlaceholder = function () {
     const aggregatedSection = Admin.safeGetElement("aggregated-metrics-section");
     if (aggregatedSection) {
@@ -7678,6 +7681,7 @@ Admin.showTab = function (tabName) {
     }
 }
 
+Admin.showTab = showTab;
 // ===================================================================
 // MULTI-HEADER AUTHENTICATION MANAGEMENT
 // ===================================================================
@@ -14772,7 +14776,7 @@ Admin.handleGatewayFormSubmit = async function (e) {
 
             const queryString = searchParams.toString();
             const redirectUrl = `${window.ROOT_PATH}/admin${queryString ? `?${queryString}` : ""}#gateways`;
-            window.location.href = redirectUrl;
+            Admin.location.href = redirectUrl;
         }
     } catch (error) {
         console.error("Error:", error);
@@ -14857,7 +14861,7 @@ Admin.handleResourceFormSubmit = async function (e) {
             }
             const queryString = searchParams.toString();
             const redirectUrl = `${window.ROOT_PATH}/admin${queryString ? `?${queryString}` : ""}#resources`;
-            window.location.href = redirectUrl;
+            Admin.location.href = redirectUrl;
         }
     } catch (error) {
         console.error("Error:", error);
@@ -14926,7 +14930,7 @@ Admin.handlePromptFormSubmit = async function (e) {
         }
         const queryString = searchParams.toString();
         const redirectUrl = `${window.ROOT_PATH}/admin${queryString ? `?${queryString}` : ""}#prompts`;
-        window.location.href = redirectUrl;
+        Admin.location.href = redirectUrl;
     } catch (error) {
         console.error("Error:", error);
         if (status) {
@@ -15000,7 +15004,7 @@ Admin.handleEditPromptFormSubmit = async function (e) {
         }
         const queryString = searchParams.toString();
         const redirectUrl = `${window.ROOT_PATH}/admin${queryString ? `?${queryString}` : ""}#prompts`;
-        window.location.href = redirectUrl;
+        Admin.location.href = redirectUrl;
     } catch (error) {
         console.error("Error:", error);
         Admin.showErrorMessage(error.message);
@@ -15068,7 +15072,7 @@ Admin.handleServerFormSubmit = async function (e) {
 
             const queryString = searchParams.toString();
             const redirectUrl = `${window.ROOT_PATH}/admin${queryString ? `?${queryString}` : ""}#catalog`;
-            window.location.href = redirectUrl;
+            Admin.location.href = redirectUrl;
         }
     } catch (error) {
         console.error("Add Server Error:", error);
@@ -15197,7 +15201,7 @@ Admin.handleA2AFormSubmit = async function (e) {
 
             const queryString = searchParams.toString();
             const redirectUrl = `${window.ROOT_PATH}/admin${queryString ? `?${queryString}` : ""}#a2a-agents`;
-            window.location.href = redirectUrl;
+            Admin.location.href = redirectUrl;
         }
     } catch (error) {
         console.error("Add A2A Agent Error:", error);
@@ -15297,7 +15301,7 @@ Admin.handleToolFormSubmit = async function (event) {
             }
             const queryString = searchParams.toString();
             const redirectUrl = `${window.ROOT_PATH}/admin${queryString ? `?${queryString}` : ""}#tools`;
-            window.location.href = redirectUrl;
+            Admin.location.href = redirectUrl;
         }
     } catch (error) {
         console.error("Fetch error:", error);
@@ -15367,7 +15371,7 @@ Admin.handleEditToolFormSubmit = async function (event) {
             }
             const queryString = searchParams.toString();
             const redirectUrl = `${window.ROOT_PATH}/admin${queryString ? `?${queryString}` : ""}#tools`;
-            window.location.href = redirectUrl;
+            Admin.location.href = redirectUrl;
         }
     } catch (error) {
         console.error("Fetch error:", error);
@@ -15462,7 +15466,7 @@ Admin.handleEditGatewayFormSubmit = async function (e) {
         }
         const queryString = searchParams.toString();
         const redirectUrl = `${window.ROOT_PATH}/admin${queryString ? `?${queryString}` : ""}#gateways`;
-        window.location.href = redirectUrl;
+        Admin.location.href = redirectUrl;
     } catch (error) {
         console.error("Error:", error);
         Admin.showErrorMessage(error.message);
@@ -15563,7 +15567,7 @@ Admin.handleEditA2AAgentFormSubmit = async function (e) {
         }
         const queryString = searchParams.toString();
         const redirectUrl = `${window.ROOT_PATH}/admin${queryString ? `?${queryString}` : ""}#a2a-agents`;
-        window.location.href = redirectUrl;
+        Admin.location.href = redirectUrl;
     } catch (error) {
         console.error("Error:", error);
         Admin.showErrorMessage(error.message);
@@ -15622,7 +15626,7 @@ Admin.handleEditServerFormSubmit = async function (e) {
             }
             const queryString = searchParams.toString();
             const redirectUrl = `${window.ROOT_PATH}/admin${queryString ? `?${queryString}` : ""}#catalog`;
-            window.location.href = redirectUrl;
+            Admin.location.href = redirectUrl;
         }
     } catch (error) {
         console.error("Error:", error);
@@ -15697,7 +15701,7 @@ Admin.handleEditResFormSubmit = async function (e) {
             }
             const queryString = searchParams.toString();
             const redirectUrl = `${window.ROOT_PATH}/admin${queryString ? `?${queryString}` : ""}#resources`;
-            window.location.href = redirectUrl;
+            Admin.location.href = redirectUrl;
         }
     } catch (error) {
         console.error("Error:", error);
@@ -17775,7 +17779,7 @@ Admin.loadServers = async function () {
 
     // Reload the page with the updated parameters
     // Since the catalog panel is server-side rendered, we need a full page reload
-    window.location.href = url.toString();
+    Admin.location.href = url.toString();
 }
 
 Admin.loadServers = loadServers;
@@ -31399,18 +31403,3 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
-
-/**
- * Handle keydown event when Enter or Space key is pressed
- *
- * @param {KeyboardEvent} event - the keyboard event triggered
- * @param {function} callback - the function to call when Enter or Space is pressed
- */
-function handleKeydown(event, callback) {
-    if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        callback(event);
-    }
-}
-
-Admin.handleKeydown = handleKeydown;
