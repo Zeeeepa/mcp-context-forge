@@ -51,6 +51,7 @@ volumes:                # Named volumes survive podman-compose down/up
   lokidata:
   tempodata:
   locust_token:
+  tls_certs:            # Decrypted TLS certs (tmpfs for security - never touches disk)
 
 ###############################################################################
 #  CORE SERVICE - MCP Gateway
@@ -540,14 +541,14 @@ services:
 
     deploy:
       mode: replicated
-      replicas: 3
+      replicas: 2
       resources:
         limits:
-          cpus: '8'
-          memory: 8G
+          cpus: '2'
+          memory: 2G
         reservations:
-          cpus: '4'
-          memory: 4G
+          cpus: '0.5'
+          memory: 512M
 
     # ──────────────────────────────────────────────────────────────────────
     # Volume Mounts
@@ -1825,8 +1826,8 @@ services:
 #
 #  Features:
 #  - Auto-generates self-signed certificates on first run
-#  - Supports custom certificates (CA-signed or your own)
-#  - Supports passphrase-protected keys (auto-decrypted for nginx)
+#  - Custom certs: place your own cert.pem/key.pem in ./certs/ before starting
+#  - Supports passphrase-protected private keys (decrypted securely at runtime)
 #  - HTTPS on port 8443, HTTP on port 8080 (both available)
 #  - Compatible with other profiles: --profile tls --profile monitoring
 #
@@ -1860,58 +1861,63 @@ services:
 ###############################################################################
 
   # ──────────────────────────────────────────────────────────────────────
-  # Certificate Initialization - Auto-generates self-signed certs if missing
-  # Supports passphrase-protected keys via KEY_FILE_PASSWORD
+  # Certificate Initialization - Auto-generates or decrypts TLS certificates
+  # Supports passphrase-protected private keys via KEY_FILE_PASSWORD env var
+  # Decrypted keys are stored in tmpfs volume (memory-only for security)
   # ──────────────────────────────────────────────────────────────────────
   cert_init:
     image: alpine/openssl:latest
     volumes:
-      - ./certs:/certs
+      - ./certs:/certs:ro           # Source certs (read-only)
+      - tls_certs:/decrypted        # Decrypted certs (tmpfs - memory only)
     environment:
       - KEY_FILE_PASSWORD=${KEY_FILE_PASSWORD:-}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        # Check if we have an encrypted key that needs decryption
-        if [ -f /certs/key-encrypted.pem ] && [ -n "${KEY_FILE_PASSWORD}" ]; then
-          # Validate: encrypted key requires matching certificate
-          if [ ! -f /certs/cert.pem ]; then
-            echo "❌ Found key-encrypted.pem but cert.pem is missing"
-            echo "   Please provide both files: cert.pem and key-encrypted.pem"
-            exit 1
-          fi
-          echo "🔓 Decrypting passphrase-protected key for nginx..."
-          if [ -f /certs/key.pem ]; then
-            echo "⚠️  Overwriting existing key.pem with decrypted version"
-          fi
-          # Decrypt the key for nginx (nginx doesn't support passphrase-protected keys)
-          # Using env: prefix to avoid exposing password in process listing
-          openssl rsa -in /certs/key-encrypted.pem -out /certs/key.pem -passin env:KEY_FILE_PASSWORD
-          if [ $? -eq 0 ]; then
-            chmod 640 /certs/key.pem
-            echo "✅ Successfully decrypted key-encrypted.pem to key.pem"
-          else
-            echo "❌ Failed to decrypt key-encrypted.pem - check KEY_FILE_PASSWORD"
-            exit 1
-          fi
-        fi
+        mkdir -p /decrypted
 
-        # Check if we already have unencrypted certs
-        if [ -f /certs/cert.pem ] && [ -f /certs/key.pem ]; then
-          echo "✅ Certificates found in ./certs - using existing"
+        # Case 1: No certs exist - generate self-signed
+        if [ ! -f /certs/cert.pem ] || [ ! -f /certs/key.pem ]; then
+          echo "🔏 Generating self-signed TLS certificate..."
+          openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
+            -keyout /decrypted/key.pem -out /decrypted/cert.pem \
+            -subj "/CN=localhost" \
+            -addext "subjectAltName=DNS:localhost,DNS:gateway,DNS:nginx,IP:127.0.0.1"
+          chmod 644 /decrypted/cert.pem
+          chmod 640 /decrypted/key.pem
+          echo "✅ TLS certificate generated (self-signed)"
           exit 0
         fi
 
-        # Generate new self-signed certificate (without passphrase for nginx)
-        echo "🔏 Generating self-signed TLS certificate..."
-        mkdir -p /certs
-        openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
-          -keyout /certs/key.pem -out /certs/cert.pem \
-          -subj "/CN=localhost" \
-          -addext "subjectAltName=DNS:localhost,DNS:gateway,DNS:nginx,IP:127.0.0.1"
-        chmod 644 /certs/cert.pem
-        chmod 640 /certs/key.pem
-        echo "✅ TLS certificate generated in ./certs"
+        # Case 2: Certs exist - copy cert, handle key based on passphrase
+        echo "📋 Certificates found in ./certs"
+        cp /certs/cert.pem /decrypted/cert.pem
+        chmod 644 /decrypted/cert.pem
+
+        # Check if key is encrypted
+        if grep -q "ENCRYPTED" /certs/key.pem 2>/dev/null; then
+          if [ -z "$KEY_FILE_PASSWORD" ]; then
+            echo "❌ ERROR: Private key is encrypted but KEY_FILE_PASSWORD not provided"
+            echo "   Set KEY_FILE_PASSWORD environment variable and try again"
+            exit 1
+          fi
+          echo "🔓 Decrypting private key..."
+          if openssl rsa -in /certs/key.pem -out /decrypted/key.pem -passin env:KEY_FILE_PASSWORD 2>/dev/null; then
+            chmod 640 /decrypted/key.pem
+            echo "✅ Private key decrypted successfully"
+          else
+            echo "❌ ERROR: Failed to decrypt private key - wrong passphrase?"
+            exit 1
+          fi
+        else
+          # Key is not encrypted - copy as-is
+          cp /certs/key.pem /decrypted/key.pem
+          chmod 640 /decrypted/key.pem
+          echo "✅ Using unencrypted private key"
+        fi
+
+        echo "✅ TLS certificates ready in /decrypted"
     profiles: ["tls"]
 
   # ──────────────────────────────────────────────────────────────────────
@@ -1938,7 +1944,7 @@ services:
     volumes:
       - nginx_cache:/var/cache/nginx                         # Persistent cache storage
       - ./infra/nginx/nginx-tls.conf:/etc/nginx/nginx.conf:ro  # TLS-enabled config
-      - ./certs:/app/certs:ro                                 # Mount SSL certs
+      - tls_certs:/app/certs:ro                              # Decrypted SSL certs (from cert_init)
     # TCP kernel tuning for 3000 concurrent connections
     sysctls:
       - net.ipv4.tcp_fin_timeout=15
