@@ -16,6 +16,7 @@ from functools import wraps
 import logging
 from typing import Callable, Generator, List, Optional
 import uuid
+from contextlib import contextmanager
 
 # Third-Party
 from fastapi import Cookie, Depends, HTTPException, Request, status
@@ -25,7 +26,6 @@ from sqlalchemy.orm import Session
 # First-Party
 from mcpgateway.auth import get_current_user
 from mcpgateway.config import settings
-from contextlib import contextmanager
 from mcpgateway.db import SessionLocal, get_request_session
 from mcpgateway.services.permission_service import PermissionService
 
