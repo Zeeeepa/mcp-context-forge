@@ -194,7 +194,7 @@ class EncryptionService:
             ValueError: If encryption fails
         """
         if self.is_encrypted(plaintext):
-            raise AlreadyEncryptedError("Input is already encrypted. Use decrypt_secret() first, or " "use decrypt_secret_or_plaintext() if you need idempotent behavior.")
+            raise AlreadyEncryptedError("Input is already encrypted. Use decrypt_secret() first, or use decrypt_secret_or_plaintext() if you need idempotent behavior.")
 
         try:
             salt = os.urandom(16)
@@ -371,10 +371,10 @@ class EncryptionService:
             fernet = Fernet(key)
             decrypted = fernet.decrypt(obj["token"].encode())
             return decrypted.decode()
-        except ValueError:
-            raise
         except (InvalidToken, binascii.Error) as e:
             raise ValueError(f"Decryption failed (corrupted or wrong key): {e}") from e
+        except ValueError:
+            raise
         except Exception as e:
             raise ValueError(f"Decryption failed: {e}") from e
 
