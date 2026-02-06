@@ -54,6 +54,7 @@ class TestEncryptionService:
 
         with pytest.raises(AlreadyEncryptedError):
             encryption.encrypt_secret(encrypted)
+
         # Test that different keys produce different encrypted output.
         encryption1 = EncryptionService(SecretStr("key1"))
         encryption2 = EncryptionService(SecretStr("key2"))
