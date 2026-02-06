@@ -142,6 +142,16 @@ class EncryptionService:
         hash_len: int = 32,
         salt_len: int = 16,
     ):
+        """Initialize the encryption service.
+
+        Args:
+            encryption_secret: Secret key for encryption/decryption (SecretStr or string)
+            time_cost: Argon2id time cost parameter (default: from settings or 3)
+            memory_cost: Argon2id memory cost parameter in KiB (default: from settings or 65536)
+            parallelism: Argon2id parallelism parameter (default: from settings or 1)
+            hash_len: Length of derived key in bytes (default: 32)
+            salt_len: Length of salt in bytes (default: 16)
+        """
         if isinstance(encryption_secret, SecretStr):
             self.encryption_secret = encryption_secret.get_secret_value().encode()
         else:
