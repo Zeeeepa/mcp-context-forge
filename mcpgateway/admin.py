@@ -4316,14 +4316,18 @@ async def admin_view_team_members(
                     </div>
 
                     <!-- Submit button (only for team owners) -->
-                    {"" if not is_team_owner else '''
+                    {
+            ""
+            if not is_team_owner
+            else '''
                     <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <button type="submit"
                                 class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             Save Changes
                         </button>
                     </div>
-                    '''}
+                    '''
+        }
                 </form>
             </div>
         </div>
@@ -5583,14 +5587,14 @@ def _render_user_card_html(user_obj, current_user_email: str, admin_count: int, 
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-2">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{display_name}</h3>
-            {' '.join(badges)}
+            {" ".join(badges)}
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">📧 {safe_email}</p>
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">🔐 Provider: {auth_provider}</p>
           <p class="text-sm text-gray-600 dark:text-gray-400">📅 Created: {created_at}</p>
         </div>
         <div class="flex gap-2 ml-4">
-          {' '.join(actions)}
+          {" ".join(actions)}
         </div>
       </div>
     </div>
@@ -6222,10 +6226,10 @@ async def admin_get_user_edit(
                     id="edit-password-policy-data"
                     class="hidden"
                     data-min-length="{settings.password_min_length}"
-                    data-require-uppercase="{'true' if settings.password_require_uppercase else 'false'}"
-                    data-require-lowercase="{'true' if settings.password_require_lowercase else 'false'}"
-                    data-require-numbers="{'true' if settings.password_require_numbers else 'false'}"
-                    data-require-special="{'true' if settings.password_require_special else 'false'}"
+                    data-require-uppercase="{"true" if settings.password_require_uppercase else "false"}"
+                    data-require-lowercase="{"true" if settings.password_require_lowercase else "false"}"
+                    data-require-numbers="{"true" if settings.password_require_numbers else "false"}"
+                    data-require-special="{"true" if settings.password_require_special else "false"}"
                 ></div>
                 <div class="flex justify-end space-x-3">
                     <button type="button" onclick="hideUserEditModal()"
@@ -10981,7 +10985,7 @@ async def admin_metrics_partial_html(
     Raises:
         HTTPException: If entity_type is not one of the valid types
     """
-    LOGGER.debug(f"User {get_user_email(user)} requested metrics partial " f"(entity_type={entity_type}, page={page}, per_page={per_page})")
+    LOGGER.debug(f"User {get_user_email(user)} requested metrics partial (entity_type={entity_type}, page={page}, per_page={per_page})")
 
     # Validate entity type
     valid_types = ["tools", "resources", "prompts", "servers"]
@@ -12849,15 +12853,15 @@ async def admin_edit_a2a_agent(
                 auth_headers = []
 
         # Passthrough headers
-        passthrough_headers = str(form.get("passthrough_headers"))
-        if passthrough_headers and passthrough_headers.strip():
+        passthrough_headers_raw = form.get("passthrough_headers")
+        passthrough_headers = None
+        if passthrough_headers_raw and str(passthrough_headers_raw).strip():
+            passthrough_headers_str = str(passthrough_headers_raw)
             try:
-                passthrough_headers = orjson.loads(passthrough_headers)
+                passthrough_headers = orjson.loads(passthrough_headers_str)
             except (orjson.JSONDecodeError, ValueError):
                 # Fallback to comma-separated parsing
-                passthrough_headers = [h.strip() for h in passthrough_headers.split(",") if h.strip()]
-        else:
-            passthrough_headers = None
+                passthrough_headers = [h.strip() for h in passthrough_headers_str.split(",") if h.strip()]
 
         # Parse OAuth configuration - support both JSON string and individual form fields
         oauth_config_json = str(form.get("oauth_config"))

@@ -1310,7 +1310,6 @@ class TestAdminToolRoutes:
         assert isinstance(result, JSONResponse)
         assert result.status_code == 422
 
-
     @patch.object(ToolService, "update_tool")
     # @pytest.mark.skip("Need to investigate")
     async def test_admin_edit_tool_with_empty_optional_fields(self, mock_update_tool, mock_request, mock_db):
@@ -3994,7 +3993,6 @@ class TestOAuthFunctionality:
         assert isinstance(response, JSONResponse)
         assert response.status_code == 200
 
-
     @patch.object(GatewayService, "register_gateway")
     async def test_admin_add_gateway_oauth_assembled_from_form_fields(self, mock_register_gateway, mock_request, mock_db):
         """Test adding gateway with OAuth config assembled from individual UI form fields."""
@@ -4262,7 +4260,6 @@ class TestOAuthFunctionality:
         gateway_update = mock_update_gateway.call_args.args[2]
         assert gateway_update.oauth_config == {"grant_type": "client_credentials"}
 
-
     @patch.object(GatewayService, "register_gateway")
     async def test_admin_add_gateway_ca_certificate_signed(self, mock_register_gateway, mock_request, mock_db, monkeypatch):
         """Test adding gateway with CA certificate signing enabled."""
@@ -4330,7 +4327,6 @@ class TestOAuthFunctionality:
             assert gateway_create.ca_certificate == "CERT"
             assert gateway_create.ca_certificate_sig is None
             assert gateway_create.signing_algorithm is None
-
 
     @patch.object(GatewayService, "register_gateway")
     async def test_admin_add_gateway_ca_certificate_signing_failure(self, mock_register_gateway, mock_request, mock_db, monkeypatch):
@@ -6067,10 +6063,7 @@ async def test_admin_teams_partial_html_relationship_filters_and_query_params(mo
     team_member = SimpleNamespace(id="team-2", name="Beta Team", slug="beta", description="Beta", visibility="private", is_active=True, is_personal=False)
 
     # Hit the discover_public_teams limit branch (>= 500) without blowing up runtime.
-    public_teams = [
-        SimpleNamespace(id=f"pub-{i}", name=f"Public {i}", slug=f"pub-{i}", description="", visibility="public", is_active=True, is_personal=False)
-        for i in range(500)
-    ]
+    public_teams = [SimpleNamespace(id=f"pub-{i}", name=f"Public {i}", slug=f"pub-{i}", description="", visibility="public", is_active=True, is_personal=False) for i in range(500)]
 
     team_service = MagicMock()
     team_service.get_user_teams = AsyncMock(return_value=[team_owner, team_member])
@@ -6290,7 +6283,11 @@ async def test_admin_users_partial_html_selector_team_members_fetch_exception(mo
     auth_service = MagicMock()
     auth_service.list_users = AsyncMock(
         return_value=SimpleNamespace(
-            data=[SimpleNamespace(email=current_user_email, full_name="Owner", is_active=True, is_admin=True, auth_provider="local", created_at=datetime.now(timezone.utc), password_change_required=False)],
+            data=[
+                SimpleNamespace(
+                    email=current_user_email, full_name="Owner", is_active=True, is_admin=True, auth_provider="local", created_at=datetime.now(timezone.utc), password_change_required=False
+                )
+            ],
             pagination=SimpleNamespace(model_dump=lambda: {"page": 1}),
         )
     )
@@ -11726,12 +11723,14 @@ async def test_admin_edit_a2a_agent_oauth_config_invalid_json(monkeypatch, mock_
     team_service = MagicMock()
     team_service.verify_team_for_user = AsyncMock(return_value=str(uuid4()))
     monkeypatch.setattr("mcpgateway.admin.TeamManagementService", lambda db: team_service)
-    monkeypatch.setattr("mcpgateway.admin.MetadataCapture.extract_modification_metadata", lambda *_args, **_kwargs: {"modified_by": "u", "modified_from_ip": None, "modified_via": "ui", "modified_user_agent": None})
+    monkeypatch.setattr(
+        "mcpgateway.admin.MetadataCapture.extract_modification_metadata", lambda *_args, **_kwargs: {"modified_by": "u", "modified_from_ip": None, "modified_via": "ui", "modified_user_agent": None}
+    )
 
     response = await admin_edit_a2a_agent("agent-1", request, mock_db, user={"email": "user@example.com"})
     assert response.status_code == 200
     agent_update = service.update_agent.call_args.kwargs["agent_data"]
-    assert agent_update.passthrough_headers == ["X-Req-Id"]
+    assert agent_update.oauth_config is None
 
 
 # =============================================================================
@@ -11870,9 +11869,7 @@ class TestSearchWithSpecialCharacters:
     async def test_search_tools_with_percent_character(self, monkeypatch, mock_db):
         """Test searching tools with % character in search term."""
         setup_team_service(monkeypatch, [])
-        mock_db.execute.return_value.all.return_value = [
-            SimpleNamespace(id="tool-1", original_name="Tool 100%", display_name="Tool 100%", custom_name=None, description="Completion tool")
-        ]
+        mock_db.execute.return_value.all.return_value = [SimpleNamespace(id="tool-1", original_name="Tool 100%", display_name="Tool 100%", custom_name=None, description="Completion tool")]
         # Search for literal % - should be escaped so it doesn't match any single char
         result = await admin_search_tools(
             q="100%",
@@ -11889,9 +11886,7 @@ class TestSearchWithSpecialCharacters:
     async def test_search_tools_with_underscore_character(self, monkeypatch, mock_db):
         """Test searching tools with _ character in search term."""
         setup_team_service(monkeypatch, [])
-        mock_db.execute.return_value.all.return_value = [
-            SimpleNamespace(id="tool-1", original_name="my_tool_v1", display_name="My Tool", custom_name=None, description="A tool")
-        ]
+        mock_db.execute.return_value.all.return_value = [SimpleNamespace(id="tool-1", original_name="my_tool_v1", display_name="My Tool", custom_name=None, description="A tool")]
         # Search for literal _ - should be escaped so it doesn't match any single char
         result = await admin_search_tools(
             q="my_tool",
@@ -11908,9 +11903,7 @@ class TestSearchWithSpecialCharacters:
     async def test_search_tools_with_backslash_character(self, monkeypatch, mock_db):
         """Test searching tools with \\ character in search term."""
         setup_team_service(monkeypatch, [])
-        mock_db.execute.return_value.all.return_value = [
-            SimpleNamespace(id="tool-1", original_name="path\\tool", display_name="Path Tool", custom_name=None, description="A tool")
-        ]
+        mock_db.execute.return_value.all.return_value = [SimpleNamespace(id="tool-1", original_name="path\\tool", display_name="Path Tool", custom_name=None, description="A tool")]
         result = await admin_search_tools(
             q="path\\tool",
             include_inactive=False,
@@ -11926,9 +11919,7 @@ class TestSearchWithSpecialCharacters:
     async def test_search_servers_with_special_chars(self, monkeypatch, mock_db):
         """Test searching servers with special characters in search term."""
         setup_team_service(monkeypatch, [])
-        mock_db.execute.return_value.all.return_value = [
-            SimpleNamespace(id="srv-1", name="Server_v2.0%beta", description="Test server")
-        ]
+        mock_db.execute.return_value.all.return_value = [SimpleNamespace(id="srv-1", name="Server_v2.0%beta", description="Test server")]
         result = await admin_search_servers(
             q="v2.0%beta",
             include_inactive=False,
@@ -11943,9 +11934,7 @@ class TestSearchWithSpecialCharacters:
     async def test_search_prompts_with_special_chars(self, monkeypatch, mock_db):
         """Test searching prompts with special characters in search term."""
         setup_team_service(monkeypatch, [])
-        mock_db.execute.return_value.all.return_value = [
-            SimpleNamespace(id="prompt-1", original_name="Prompt_100%", display_name="Prompt 100%", description="Complete prompt")
-        ]
+        mock_db.execute.return_value.all.return_value = [SimpleNamespace(id="prompt-1", original_name="Prompt_100%", display_name="Prompt 100%", description="Complete prompt")]
         result = await admin_search_prompts(
             q="_100%",
             include_inactive=False,
@@ -11961,9 +11950,7 @@ class TestSearchWithSpecialCharacters:
     async def test_search_resources_with_special_chars(self, monkeypatch, mock_db):
         """Test searching resources with special characters in search term."""
         setup_team_service(monkeypatch, [])
-        mock_db.execute.return_value.all.return_value = [
-            SimpleNamespace(id="res-1", name="file_backup%2024", description="Backup resource")
-        ]
+        mock_db.execute.return_value.all.return_value = [SimpleNamespace(id="res-1", name="file_backup%2024", description="Backup resource")]
         result = await admin_search_resources(
             q="backup%2024",
             include_inactive=False,
@@ -11979,9 +11966,7 @@ class TestSearchWithSpecialCharacters:
     async def test_search_a2a_agents_with_special_chars(self, monkeypatch, mock_db):
         """Test searching A2A agents with special characters in search term."""
         setup_team_service(monkeypatch, [])
-        mock_db.execute.return_value.all.return_value = [
-            SimpleNamespace(id="agent-1", name="AI_Agent_v1%beta", description="Beta agent", endpoint_url="https://agent.example.com")
-        ]
+        mock_db.execute.return_value.all.return_value = [SimpleNamespace(id="agent-1", name="AI_Agent_v1%beta", description="Beta agent", endpoint_url="https://agent.example.com")]
         result = await admin_search_a2a_agents(
             q="Agent_v1%",
             include_inactive=False,
@@ -11996,9 +11981,7 @@ class TestSearchWithSpecialCharacters:
     async def test_search_gateways_with_special_chars(self, monkeypatch, mock_db):
         """Test searching gateways with special characters in search term."""
         setup_team_service(monkeypatch, [])
-        mock_db.execute.return_value.all.return_value = [
-            SimpleNamespace(id="gw-1", name="Gateway_API%v2", url="https://api.example.com", description="API Gateway")
-        ]
+        mock_db.execute.return_value.all.return_value = [SimpleNamespace(id="gw-1", name="Gateway_API%v2", url="https://api.example.com", description="API Gateway")]
         result = await admin_search_gateways(
             q="API%v2",
             include_inactive=False,
@@ -12041,9 +12024,7 @@ class TestSearchWithSpecialCharacters:
     async def test_search_with_unicode_characters(self, monkeypatch, mock_db):
         """Test searching with unicode characters."""
         setup_team_service(monkeypatch, [])
-        mock_db.execute.return_value.all.return_value = [
-            SimpleNamespace(id="tool-1", original_name="ツール日本語", display_name="Japanese Tool", custom_name=None, description="Unicode tool")
-        ]
+        mock_db.execute.return_value.all.return_value = [SimpleNamespace(id="tool-1", original_name="ツール日本語", display_name="Japanese Tool", custom_name=None, description="Unicode tool")]
         result = await admin_search_tools(
             q="日本語",
             include_inactive=False,
@@ -12077,9 +12058,7 @@ class TestSearchWithSpecialCharacters:
     async def test_search_with_quotes(self, monkeypatch, mock_db):
         """Test searching with quote characters."""
         setup_team_service(monkeypatch, [])
-        mock_db.execute.return_value.all.return_value = [
-            SimpleNamespace(id="tool-1", original_name='Tool "Special"', display_name="Special Tool", custom_name=None, description="A tool")
-        ]
+        mock_db.execute.return_value.all.return_value = [SimpleNamespace(id="tool-1", original_name='Tool "Special"', display_name="Special Tool", custom_name=None, description="A tool")]
         result = await admin_search_tools(
             q='"Special"',
             include_inactive=False,
@@ -12095,9 +12074,7 @@ class TestSearchWithSpecialCharacters:
     async def test_search_with_brackets_and_parens(self, monkeypatch, mock_db):
         """Test searching with brackets and parentheses."""
         setup_team_service(monkeypatch, [])
-        mock_db.execute.return_value.all.return_value = [
-            SimpleNamespace(id="tool-1", original_name="Tool [v1] (beta)", display_name="Beta Tool", custom_name=None, description="A tool")
-        ]
+        mock_db.execute.return_value.all.return_value = [SimpleNamespace(id="tool-1", original_name="Tool [v1] (beta)", display_name="Beta Tool", custom_name=None, description="A tool")]
         result = await admin_search_tools(
             q="[v1] (beta)",
             include_inactive=False,

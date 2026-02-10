@@ -53,6 +53,8 @@ def _escape_like_wildcards(search_term: str) -> str:
         str: Search term with % and _ characters escaped.
     """
     return search_term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 logger = logging_service.get_logger(__name__)
 
 
