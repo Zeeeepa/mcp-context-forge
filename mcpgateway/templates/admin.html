@@ -5901,7 +5901,7 @@ Hello &#123;&#123; name &#125;&#125;, welcome to &#123;&#123; company &#125;&#12
                     name="password"
                     required
                     minlength="8"
-                    oninput="Admin.validateNewUserPassword()"
+                    oninput="window.validateNewUserPassword()"
                     class="mt-1 px-1.5 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
                     placeholder="Strong password"
                   />
@@ -11581,7 +11581,7 @@ class="fixed z-50 inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-ce
 
             // Add team badge if team is selected
             if (teamId && teamId !== '') {
-              const teamName = getTeamNameById(teamId);
+              const teamName = Admin.getTeamNameById(teamId);
               if (teamName) {
                 const badge = document.createElement('span');
                 badge.className = 'team-badge inline-flex items-center px-2 py-1 ml-2 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full';
@@ -11800,7 +11800,7 @@ class="fixed z-50 inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-ce
         tableBody.innerHTML = '';
         rules.forEach(rule => {
           const row = document.createElement('tr');
-          const teamName = rule.team_id ? getTeamNameById(rule.team_id) || rule.team_id : 'None';
+          const teamName = rule.team_id ? Admin.getTeamNameById(rule.team_id) || rule.team_id : 'None';
 
           row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">${rule.name}</td>
@@ -12549,7 +12549,7 @@ class="fixed z-50 inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-ce
         try {
           // Use the same auth approach as other admin endpoints
           const headers = {};
-          const token = getAuthToken();
+          const token = Admin.getAuthToken();
           if (token) {
             headers["Authorization"] = `Bearer ${token}`;
           }
@@ -12600,7 +12600,7 @@ class="fixed z-50 inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-ce
       async function showLogFiles() {
         try {
           const headers = {};
-          const token = getAuthToken();
+          const token = Admin.getAuthToken();
           if (token) {
             headers["Authorization"] = `Bearer ${token}`;
           }
@@ -12668,7 +12668,7 @@ class="fixed z-50 inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-ce
       async function downloadLogFile(filename) {
         try {
           const headers = {};
-          const token = getAuthToken();
+          const token = Admin.getAuthToken();
           if (token) {
             headers["Authorization"] = `Bearer ${token}`;
           }
