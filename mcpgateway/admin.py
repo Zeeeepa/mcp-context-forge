@@ -478,7 +478,7 @@ def escape_like_wildcards(search_term: str) -> str:
     return search_term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-def apply_search_filter(query, model, search_term: str, fields: list):
+def apply_search_filter(query, search_term: str, fields: list):
     """Apply a case-insensitive LIKE search filter across multiple fields.
 
     This helper function reduces code repetition by consolidating the search
@@ -486,7 +486,6 @@ def apply_search_filter(query, model, search_term: str, fields: list):
 
     Args:
         query: SQLAlchemy select query to modify.
-        model: The ORM model class (e.g., DbServer, DbTool).
         search_term: The user's search term (will be escaped and wrapped with %).
         fields: List of tuples (field, is_nullable, is_json) specifying:
             - field: The model attribute to search (e.g., model.name)
@@ -1646,7 +1645,6 @@ async def admin_servers_partial_html(
     if tag_search and isinstance(tag_search, str):
         query = apply_search_filter(
             query,
-            DbServer,
             tag_search,
             [
                 (DbServer.id, False, False),
@@ -6715,7 +6713,6 @@ async def admin_tools_partial_html(
     if tag_search and isinstance(tag_search, str):
         query = apply_search_filter(
             query,
-            DbTool,
             tag_search,
             [
                 (DbTool.id, False, False),
@@ -7273,7 +7270,6 @@ async def admin_prompts_partial_html(
     if tag_search and isinstance(tag_search, str):
         query = apply_search_filter(
             query,
-            DbPrompt,
             tag_search,
             [
                 (DbPrompt.id, False, False),
@@ -7996,7 +7992,6 @@ async def admin_resources_partial_html(
     if tag_search and isinstance(tag_search, str):
         query = apply_search_filter(
             query,
-            DbResource,
             tag_search,
             [
                 (DbResource.id, False, False),
@@ -8609,7 +8604,6 @@ async def admin_a2a_partial_html(
     if tag_search and isinstance(tag_search, str):
         query = apply_search_filter(
             query,
-            DbA2AAgent,
             tag_search,
             [
                 (DbA2AAgent.id, False, False),
