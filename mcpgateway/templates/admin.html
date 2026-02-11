@@ -8030,7 +8030,9 @@ Hello &#123;&#123; name &#125;&#125;, welcome to &#123;&#123; company &#125;&#12
                 '/admin/tokens/partial' + '?render=controls' + '&page=' +
                 page|string + '&per_page=' + per_page|string +
                 '&include_inactive=' +
-                (include_inactive|default(false)|string|lower) %}
+                (include_inactive|default(false)|string|lower) + ('&team_id=' +
+                selected_team_id if selected_team_id else '') + ('&q=' + q if q
+                else '') %}
 
                 <div
                   id="tokens-pagination-controls"
@@ -8044,9 +8046,10 @@ Hello &#123;&#123; name &#125;&#125;, welcome to &#123;&#123; company &#125;&#12
                   = root_path + '/admin/tokens/partial' %} {% set hx_target =
                   '#tokens-table' %} {% set hx_indicator = '#tokens-loading' %}
                   {% set table_name = 'tokens' %} {% set query_params =
-                  {'include_inactive': include_inactive} %} {% autoescape false
-                  %} {% include 'pagination_controls.html' %} {% endautoescape
-                  %}
+                  {'include_inactive': include_inactive} | merge({ 'team_id':
+                  selected_team_id if selected_team_id else none, 'q': q if q
+                  else none }) %} {% autoescape false %} {% include
+                  'pagination_controls.html' %} {% endautoescape %}
                 </div>
               </div>
             </div>
@@ -8221,9 +8224,12 @@ Hello &#123;&#123; name &#125;&#125;, welcome to &#123;&#123; company &#125;&#12
                   = root_path + '/admin/a2a/partial' %} {% set hx_target =
                   '#agents-table' %} {% set hx_indicator = '#agents-loading' %}
                   {% set table_name = 'agents' %} {% set query_params =
-                  {'include_inactive': include_inactive} %} {% autoescape false
-                  %} {% include 'pagination_controls.html' %} {% endautoescape
-                  %}
+                  {'include_inactive': include_inactive} %} {% if
+                  selected_team_id %}{% set query_params = query_params |
+                  merge({'team_id': selected_team_id}) %}{% endif %} {% if q
+                  %}{% set query_params = query_params | merge({'q': q}) %}{%
+                  endif %} {% autoescape false %} {% include
+                  'pagination_controls.html' %} {% endautoescape %}
                 </div>
               </div>
             </div>
