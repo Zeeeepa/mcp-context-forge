@@ -34,25 +34,11 @@ from mcpgateway.cache.auth_cache import auth_cache
 from mcpgateway.config import settings
 from mcpgateway.db import EmailTeam, EmailTeamJoinRequest, EmailTeamMember, EmailTeamMemberHistory, EmailUser, utc_now
 from mcpgateway.services.logging_service import LoggingService
-from mcpgateway.utils.pagination import unified_paginate
+from mcpgateway.utils.pagination import unified_paginate, escape_like_wildcards as _escape_like_wildcards
 
 # Initialize logging
 logging_service = LoggingService()
 
-
-def _escape_like_wildcards(search_term: str) -> str:
-    """Escape SQL LIKE wildcard characters in search terms.
-
-    Escapes % and _ characters to prevent unexpected wildcard matching
-    when users search for literal percent or underscore characters.
-
-    Args:
-        search_term: The raw search term from user input.
-
-    Returns:
-        str: Search term with % and _ characters escaped.
-    """
-    return search_term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 logger = logging_service.get_logger(__name__)

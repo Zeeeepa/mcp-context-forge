@@ -7160,7 +7160,7 @@ async def test_admin_servers_partial_html_with_tag_search(monkeypatch, mock_requ
         include_inactive=False,
         render=None,
         team_id="team-1",
-        tag_search="test-search",
+        search_term="test-search",
         db=mock_db,
         user={"email": "user@example.com", "db": mock_db},
     )
@@ -7372,7 +7372,7 @@ async def test_admin_tools_partial_html_with_tag_search(monkeypatch, mock_reques
         render=None,
         gateway_id=None,
         team_id="team-1",
-        tag_search="search-term",
+        search_term="search-term",
         db=mock_db,
         user={"email": "user@example.com", "db": mock_db},
     )
@@ -7630,7 +7630,7 @@ async def test_admin_prompts_partial_html_with_tag_search(monkeypatch, mock_requ
         render=None,
         gateway_id=None,
         team_id="team-1",
-        tag_search="prompt-filter",
+        search_term="prompt-filter",
         db=mock_db,
         user={"email": "user@example.com", "db": mock_db},
     )
@@ -7689,7 +7689,7 @@ async def test_admin_resources_partial_html_with_tag_search(monkeypatch, mock_re
         render=None,
         gateway_id=None,
         team_id="team-1",
-        tag_search="resource-filter",
+        search_term="resource-filter",
         db=mock_db,
         user={"email": "user@example.com", "db": mock_db},
     )
@@ -7979,7 +7979,7 @@ async def test_admin_a2a_partial_html_with_tag_search(monkeypatch, mock_request,
         render=None,
         gateway_id=None,
         team_id="team-1",
-        tag_search="agent-filter",
+        search_term="agent-filter",
         db=mock_db,
         user={"email": "user@example.com", "db": mock_db},
     )
