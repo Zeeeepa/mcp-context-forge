@@ -38,6 +38,7 @@ from mcpgateway.utils.pagination import unified_paginate, escape_like_wildcards 
 
 # Initialize logging
 logging_service = LoggingService()
+logger = logging_service.get_logger(__name__)
 
 
 
