@@ -1,4 +1,4 @@
-/* global marked, DOMPurify, safeReplaceState, _logRestrictedContext */
+/* global marked, DOMPurify, safeReplaceState, _logRestrictedContext, getPaginationParams, buildTableUrl */
 const MASKED_AUTH_VALUE = "*****";
 
 // Runtime fallbacks when admin.js is loaded outside admin.html
@@ -7675,13 +7675,10 @@ function showTab(tabName) {
                     setupTokenListEventHandlers();
 
                     // Load tokens list if not already loaded
-                    const tokensTable =
-                        document.getElementById("tokens-table");
+                    const tokensTable = document.getElementById("tokens-table");
                     if (tokensTable) {
                         const hasLoadingMessage =
-                            tokensTable.innerHTML.includes(
-                                "Loading tokens...",
-                            );
+                            tokensTable.innerHTML.includes("Loading tokens...");
                         if (hasLoadingMessage) {
                             // Trigger HTMX load manually if HTMX is available
                             if (window.htmx && window.htmx.trigger) {
@@ -20156,7 +20153,11 @@ async function loadTokensList(resetToFirstPage) {
             String(getPaginationParams("tokens").perPage || 10),
         );
         Object.entries(params).forEach(function (entry) {
-            if (entry[1] !== null && entry[1] !== undefined && entry[1] !== "") {
+            if (
+                entry[1] !== null &&
+                entry[1] !== undefined &&
+                entry[1] !== ""
+            ) {
                 baseUrl.searchParams.set(entry[0], entry[1]);
             }
         });
@@ -20180,6 +20181,7 @@ async function loadTokensList(resetToFirstPage) {
 /**
  * Display tokens list in the UI
  */
+// eslint-disable-next-line no-unused-vars -- Called from admin.html
 function displayTokensList(tokens) {
     const tokensList = safeGetElement("tokens-list");
     if (!tokensList) {
@@ -20775,12 +20777,14 @@ function showTokenCreatedModal(tokenData) {
     document.body.appendChild(modal);
 
     // Close handlers: remove modal then refresh the token list
-    modal.querySelectorAll("[data-dismiss-token-modal]").forEach(function (btn) {
-        btn.addEventListener("click", function () {
-            modal.remove();
-            loadTokensList(true);
+    modal
+        .querySelectorAll("[data-dismiss-token-modal]")
+        .forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                modal.remove();
+                loadTokensList(true);
+            });
         });
-    });
 
     // Focus the token input for easy selection
     const tokenInput = modal.querySelector("#new-token-value");
