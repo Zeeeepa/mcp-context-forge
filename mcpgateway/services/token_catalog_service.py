@@ -509,6 +509,7 @@ class TokenCatalogService:
         Returns:
             int: Total number of matching tokens
         """
+        # pylint: disable=not-callable
         query = select(func.count(EmailApiToken.id)).where(EmailApiToken.user_email == user_email)
 
         if not include_inactive:
@@ -527,6 +528,7 @@ class TokenCatalogService:
         Returns:
             int: Total number of matching tokens
         """
+        # pylint: disable=not-callable
         query = select(func.count(EmailApiToken.id)).where(EmailApiToken.team_id == team_id)
 
         if not include_inactive:
@@ -546,6 +548,7 @@ class TokenCatalogService:
         Returns:
             int: Total number of matching tokens
         """
+        # pylint: disable=not-callable
         query = select(func.count(EmailApiToken.id)).where(EmailApiToken.user_email == user_email)
 
         if team_id:
