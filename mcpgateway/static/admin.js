@@ -17213,13 +17213,11 @@ function clearSearch(entityType) {
                 searchInput.value = "";
                 filterGatewaysTable(""); // Clear the filter
             }
-        } else if (entityType === "gateways") {
-            const searchInput = document.getElementById(
-                "gateways-search-input",
-            );
+        } else if (entityType === "tokens") {
+            const searchInput = document.getElementById("tokens-search-input");
             if (searchInput) {
                 searchInput.value = "";
-                filterGatewaysTable(""); // Clear the filter
+                performTokenSearch(""); // Clear the search and reload
             }
         }
     } catch (error) {
@@ -17246,6 +17244,7 @@ function initializeSearchInputs() {
         "resources-search-input",
         "prompts-search-input",
         "a2a-agents-search-input",
+        "tokens-search-input",
     ];
 
     searchInputIds.forEach((inputId) => {
@@ -17356,6 +17355,15 @@ function initializeSearchInputs() {
             filterA2AAgentsTable(this.value);
         });
         console.log("✅ A2A Agents search initialized");
+    }
+
+    // Tokens search
+    const tokensSearchInput = document.getElementById("tokens-search-input");
+    if (tokensSearchInput) {
+        tokensSearchInput.addEventListener("input", function () {
+            debouncedServerSideTokenSearch(this.value);
+        });
+        console.log("✅ Tokens search initialized");
     }
 }
 
@@ -20176,6 +20184,64 @@ async function loadTokensList(resetToFirstPage) {
     tokensTable.setAttribute("hx-get", url);
     htmx.process(tokensTable);
     htmx.trigger(tokensTable, "refreshTokens");
+}
+
+/**
+ * Debounced server-side token search
+ * @param {string} searchTerm - The search query
+ */
+let tokenSearchDebounceTimer = null;
+function debouncedServerSideTokenSearch(searchTerm) {
+    if (tokenSearchDebounceTimer) {
+        clearTimeout(tokenSearchDebounceTimer);
+    }
+    tokenSearchDebounceTimer = setTimeout(() => {
+        performTokenSearch(searchTerm);
+    }, 300);
+}
+
+/**
+ * Actually perform the token search after debounce
+ * @param {string} searchTerm - The search query
+ */
+async function performTokenSearch(searchTerm) {
+    const tokensTable = document.getElementById("tokens-table");
+    const loadingIndicator = document.getElementById("tokens-loading");
+
+    if (!tokensTable) {
+        console.error("tokens-table container not found");
+        return;
+    }
+
+    // Get current parameters
+    const teamId =
+        typeof getCurrentTeamId === "function" ? getCurrentTeamId() : "";
+    const includeInactive =
+        document.getElementById("show-inactive-tokens")?.checked ?? false;
+
+    // Build URL with search query
+    const params = new URLSearchParams();
+    params.set("page", "1");
+    params.set("per_page", String(getPaginationParams("tokens").perPage || 10));
+    params.set("include_inactive", includeInactive.toString());
+    if (teamId) {
+        params.set("team_id", teamId);
+    }
+    if (searchTerm && searchTerm.trim() !== "") {
+        params.set("q", searchTerm.trim());
+    }
+
+    const url = `${window.ROOT_PATH}/admin/tokens/partial?${params.toString()}`;
+    console.log(`[Token Search] Searching tokens with URL: ${url}`);
+
+    try {
+        // Update hx-get on the element and trigger an element-based HTMX request
+        tokensTable.setAttribute("hx-get", url);
+        htmx.process(tokensTable);
+        htmx.trigger(tokensTable, "refreshTokens");
+    } catch (error) {
+        console.error("Error searching tokens:", error);
+    }
 }
 
 /**

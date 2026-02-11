@@ -14848,3 +14848,133 @@ class TestAdminTokensSearch:
         assert len(result) == 1
         assert result[0]["team_id"] == "team-123"
         assert result[0]["tags"] == ["team"]
+
+
+# --------------------------------------------------------------------------- #
+# Admin Tokens Partial Search Tests                                           #
+# --------------------------------------------------------------------------- #
+class TestAdminTokensPartialSearch:
+    """Test the admin_tokens_partial_html function with search query."""
+
+    @pytest.mark.asyncio
+    async def test_admin_tokens_partial_html_with_search_query(self, monkeypatch, mock_request, mock_db):
+        """Test tokens partial with search query filters by name."""
+        pagination = make_pagination_meta()
+        mock_token = MagicMock()
+        mock_token.id = "token-1"
+        mock_token.name = "Production Token"
+        mock_token.user_email = "user@example.com"
+        mock_token.team_id = None
+        mock_token.description = "Production API token"
+        mock_token.created_at = datetime.now(timezone.utc)
+        mock_token.expires_at = None
+        mock_token.last_used = None
+        mock_token.is_active = True
+        mock_token.tags = ["prod"]
+        mock_token.server_id = None
+        mock_token.resource_scopes = []
+        mock_token.ip_restrictions = []
+        mock_token.time_restrictions = {}
+        mock_token.usage_limits = {}
+        mock_token.jti = "jti-123"
+
+        monkeypatch.setattr(
+            "mcpgateway.admin.paginate_query",
+            AsyncMock(return_value={"data": [mock_token], "pagination": pagination, "links": None}),
+        )
+        setup_team_service(monkeypatch, [])
+
+        # Mock TokenCatalogService
+        mock_token_service = MagicMock()
+        mock_token_service.get_token_revocation = AsyncMock(return_value=None)
+        monkeypatch.setattr("mcpgateway.admin.TokenCatalogService", lambda db: mock_token_service)
+
+        mock_request.headers = {}
+        response = await admin_tokens_partial_html(
+            mock_request,
+            page=1,
+            per_page=10,
+            include_inactive=False,
+            render=None,
+            q="Production",
+            team_id=None,
+            db=mock_db,
+            user={"email": "user@example.com", "db": mock_db},
+        )
+        assert isinstance(response, HTMLResponse)
+
+    @pytest.mark.asyncio
+    async def test_admin_tokens_partial_html_search_no_results(self, monkeypatch, mock_request, mock_db):
+        """Test tokens partial with search query returns empty when no matches."""
+        pagination = make_pagination_meta()
+        monkeypatch.setattr(
+            "mcpgateway.admin.paginate_query",
+            AsyncMock(return_value={"data": [], "pagination": pagination, "links": None}),
+        )
+        setup_team_service(monkeypatch, [])
+
+        # Mock TokenCatalogService
+        mock_token_service = MagicMock()
+        mock_token_service.get_token_revocation = AsyncMock(return_value=None)
+        monkeypatch.setattr("mcpgateway.admin.TokenCatalogService", lambda db: mock_token_service)
+
+        mock_request.headers = {}
+        response = await admin_tokens_partial_html(
+            mock_request,
+            page=1,
+            per_page=10,
+            include_inactive=False,
+            render=None,
+            q="NonExistent",
+            team_id=None,
+            db=mock_db,
+            user={"email": "user@example.com", "db": mock_db},
+        )
+        assert isinstance(response, HTMLResponse)
+
+    @pytest.mark.asyncio
+    async def test_admin_tokens_partial_html_search_with_team_and_inactive(self, monkeypatch, mock_request, mock_db):
+        """Test tokens partial with search query, team filter, and include inactive."""
+        pagination = make_pagination_meta()
+        mock_token = MagicMock()
+        mock_token.id = "token-1"
+        mock_token.name = "Inactive Team Token"
+        mock_token.user_email = "user@example.com"
+        mock_token.team_id = "team-123"
+        mock_token.description = None
+        mock_token.created_at = datetime.now(timezone.utc)
+        mock_token.expires_at = None
+        mock_token.last_used = None
+        mock_token.is_active = False
+        mock_token.tags = []
+        mock_token.server_id = None
+        mock_token.resource_scopes = []
+        mock_token.ip_restrictions = []
+        mock_token.time_restrictions = {}
+        mock_token.usage_limits = {}
+        mock_token.jti = "jti-123"
+
+        monkeypatch.setattr(
+            "mcpgateway.admin.paginate_query",
+            AsyncMock(return_value={"data": [mock_token], "pagination": pagination, "links": None}),
+        )
+        setup_team_service(monkeypatch, ["team-123"])
+
+        # Mock TokenCatalogService
+        mock_token_service = MagicMock()
+        mock_token_service.get_token_revocation = AsyncMock(return_value=None)
+        monkeypatch.setattr("mcpgateway.admin.TokenCatalogService", lambda db: mock_token_service)
+
+        mock_request.headers = {}
+        response = await admin_tokens_partial_html(
+            mock_request,
+            page=1,
+            per_page=10,
+            include_inactive=True,
+            render=None,
+            q="Team",
+            team_id="team-123",
+            db=mock_db,
+            user={"email": "user@example.com", "db": mock_db},
+        )
+        assert isinstance(response, HTMLResponse)

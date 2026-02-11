@@ -8345,6 +8345,7 @@ async def admin_tokens_partial_html(
     per_page: int = Query(settings.pagination_default_page_size, ge=1, le=settings.pagination_max_page_size, description="Items per page"),
     include_inactive: bool = False,
     render: Optional[str] = Query(None),
+    q: Optional[str] = Query(None, description="Search query for token name"),
     team_id: Optional[str] = Depends(_validated_team_id_param),
     db: Session = Depends(get_db),
     user=Depends(get_current_user_with_permissions),
@@ -8363,6 +8364,7 @@ async def admin_tokens_partial_html(
         per_page: Number of items per page (bounded by settings).
         include_inactive: If True, include inactive/expired tokens in results.
         render: Render mode; one of None or "controls".
+        q: Search query string to filter tokens by name.
         team_id: Filter by team ID.
         db: Database session (dependency-injected).
         user: Authenticated user object from dependency injection.
@@ -8372,7 +8374,7 @@ async def admin_tokens_partial_html(
         cards partial or pagination controls depending on ``render``.
     """
     user_email = get_user_email(user)
-    LOGGER.debug(f"User {user_email} requested tokens HTML partial (page={page}, per_page={per_page}, include_inactive={include_inactive}, render={render}, team_id={team_id})")
+    LOGGER.debug(f"User {user_email} requested tokens HTML partial (page={page}, per_page={per_page}, include_inactive={include_inactive}, render={render}, q={q}, team_id={team_id})")
 
     # Normalize per_page within configured bounds
     per_page = max(settings.pagination_min_page_size, min(per_page, settings.pagination_max_page_size))
@@ -8386,6 +8388,10 @@ async def admin_tokens_partial_html(
     if not include_inactive:
         query = query.where(and_(EmailApiToken.is_active.is_(True), or_(EmailApiToken.expires_at.is_(None), EmailApiToken.expires_at > utc_now())))
 
+    # Apply search filter on name (case-insensitive)
+    if q:
+        query = query.where(EmailApiToken.name.ilike(f"%{q}%"))
+
     query = query.order_by(desc(EmailApiToken.created_at))
 
     # Build query params for pagination links
@@ -8394,6 +8400,8 @@ async def admin_tokens_partial_html(
         query_params["include_inactive"] = "true"
     if team_id:
         query_params["team_id"] = team_id
+    if q:
+        query_params["q"] = q
 
     # Use unified pagination function
     paginated_result = await paginate_query(
