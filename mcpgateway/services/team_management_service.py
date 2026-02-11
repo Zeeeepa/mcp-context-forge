@@ -41,10 +41,6 @@ logging_service = LoggingService()
 logger = logging_service.get_logger(__name__)
 
 
-
-logger = logging_service.get_logger(__name__)
-
-
 class TeamManagementService:
     """Service for team management operations.
 
