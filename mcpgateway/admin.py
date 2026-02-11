@@ -4237,14 +4237,18 @@ async def admin_view_team_members(
                     </div>
 
                     <!-- Submit button (only for team owners) -->
-                    {"" if not is_team_owner else '''
+                    {
+            ""
+            if not is_team_owner
+            else '''
                     <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <button type="submit"
                                 class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             Save Changes
                         </button>
                     </div>
-                    '''}
+                    '''
+        }
                 </form>
             </div>
         </div>
@@ -5504,14 +5508,14 @@ def _render_user_card_html(user_obj, current_user_email: str, admin_count: int, 
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-2">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{display_name}</h3>
-            {' '.join(badges)}
+            {" ".join(badges)}
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">📧 {safe_email}</p>
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">🔐 Provider: {auth_provider}</p>
           <p class="text-sm text-gray-600 dark:text-gray-400">📅 Created: {created_at}</p>
         </div>
         <div class="flex gap-2 ml-4">
-          {' '.join(actions)}
+          {" ".join(actions)}
         </div>
       </div>
     </div>
@@ -5991,9 +5995,7 @@ async def admin_create_user(
         )
 
         # If the user was created with the default password, optionally force password change
-        if (
-            settings.password_change_enforcement_enabled and getattr(settings, "require_password_change_for_default_password", True) and password == settings.default_user_password.get_secret_value()
-        ):  # nosec B105
+        if settings.password_change_enforcement_enabled and getattr(settings, "require_password_change_for_default_password", True) and password == settings.default_user_password.get_secret_value():  # nosec B105
             new_user.password_change_required = True
             db.commit()
 
@@ -6143,10 +6145,10 @@ async def admin_get_user_edit(
                     id="edit-password-policy-data"
                     class="hidden"
                     data-min-length="{settings.password_min_length}"
-                    data-require-uppercase="{'true' if settings.password_require_uppercase else 'false'}"
-                    data-require-lowercase="{'true' if settings.password_require_lowercase else 'false'}"
-                    data-require-numbers="{'true' if settings.password_require_numbers else 'false'}"
-                    data-require-special="{'true' if settings.password_require_special else 'false'}"
+                    data-require-uppercase="{"true" if settings.password_require_uppercase else "false"}"
+                    data-require-lowercase="{"true" if settings.password_require_lowercase else "false"}"
+                    data-require-numbers="{"true" if settings.password_require_numbers else "false"}"
+                    data-require-special="{"true" if settings.password_require_special else "false"}"
                 ></div>
                 <div class="flex justify-end space-x-3">
                     <button type="button" onclick="hideUserEditModal()"
@@ -8483,6 +8485,71 @@ async def admin_tokens_partial_html(
             "include_inactive": include_inactive,
         },
     )
+
+
+@admin_router.get("/tokens/search", response_class=JSONResponse)
+@require_permission("tokens.read", allow_admin_bypass=False)
+async def admin_search_tokens(
+    q: str = Query("", description="Search query"),
+    include_inactive: bool = False,
+    limit: int = Query(settings.pagination_default_page_size, ge=1, le=100, description="Max results"),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user_with_permissions),
+):
+    """Search API tokens by name.
+
+    Args:
+        q (str): Search query string to match against token names.
+        include_inactive (bool): Whether to include inactive/revoked tokens.
+        limit (int): Maximum number of results to return.
+        db (Session): Database session dependency.
+        user: Current authenticated user.
+
+    Returns:
+        JSONResponse: List of matching tokens with basic info.
+    """
+    user_email = get_user_email(user)
+    LOGGER.debug(f"User {user_email} searching tokens with query='{q}', include_inactive={include_inactive}, limit={limit}")
+
+    # Build base query: tokens owned by this user
+    query = select(EmailApiToken).where(EmailApiToken.user_email == user_email)
+
+    if not include_inactive:
+        query = query.where(and_(EmailApiToken.is_active.is_(True), or_(EmailApiToken.expires_at.is_(None), EmailApiToken.expires_at > utc_now())))
+
+    # Apply search filter on name (case-insensitive)
+    if q:
+        query = query.where(EmailApiToken.name.ilike(f"%{q}%"))
+
+    query = query.order_by(desc(EmailApiToken.created_at)).limit(limit)
+
+    result = db.execute(query)
+    tokens = result.scalars().all()
+
+    # Get revocation info for tokens
+    token_service = TokenCatalogService(db)
+    token_data = []
+    for token in tokens:
+        revocation_info = await token_service.get_token_revocation(token.jti)
+        token_data.append(
+            {
+                "id": token.id,
+                "name": token.name,
+                "description": token.description,
+                "user_email": token.user_email,
+                "team_id": token.team_id,
+                "created_at": token.created_at,
+                "expires_at": token.expires_at,
+                "last_used": token.last_used,
+                "is_active": token.is_active,
+                "is_revoked": revocation_info is not None,
+                "tags": token.tags or [],
+                "server_id": token.server_id,
+            }
+        )
+
+    db.commit()
+    return token_data
 
 
 @admin_router.get("/a2a/partial", response_class=HTMLResponse)
@@ -10915,7 +10982,7 @@ async def admin_metrics_partial_html(
     Raises:
         HTTPException: If entity_type is not one of the valid types
     """
-    LOGGER.debug(f"User {get_user_email(user)} requested metrics partial " f"(entity_type={entity_type}, page={page}, per_page={per_page})")
+    LOGGER.debug(f"User {get_user_email(user)} requested metrics partial (entity_type={entity_type}, page={page}, per_page={per_page})")
 
     # Validate entity type
     valid_types = ["tools", "resources", "prompts", "servers"]
