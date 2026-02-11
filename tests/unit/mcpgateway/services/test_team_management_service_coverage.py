@@ -504,7 +504,8 @@ class TestGetTeamMembersEdge:
 class TestCacheGetters:
     def test_auth_cache_import_error(self, svc):
         """ImportError in _get_auth_cache returns None."""
-        with patch.dict("sys.modules", {"mcpgateway.cache.auth_cache": None}):
+        # Patch the import statement inside _get_auth_cache to raise ImportError
+        with patch("mcpgateway.cache.auth_cache.get_auth_cache", side_effect=ImportError("Mocked import error")):
             result = svc._get_auth_cache()
         assert result is None
 
@@ -736,6 +737,14 @@ class TestMemberCountsCachedEdge:
         """Redis has cached values, no DB query needed."""
         mock_redis = AsyncMock()
         mock_redis.mget = AsyncMock(return_value=[b"5"])
+
+        # Mock DB query to return empty (no cache misses)
+        mock_query = MagicMock()
+        mock_filter = MagicMock()
+        mock_filter.group_by = MagicMock(return_value=mock_filter)
+        mock_filter.all = MagicMock(return_value=[])  # No DB results since cache hit
+        mock_query.filter = MagicMock(return_value=mock_filter)
+        db.query = MagicMock(return_value=mock_query)
 
         with patch("mcpgateway.services.team_management_service.settings") as mock_settings, \
              patch("mcpgateway.utils.redis_client.get_redis_client", AsyncMock(return_value=mock_redis)):

@@ -805,7 +805,7 @@ class TestAggregateMetrics:
 
         cached_data = {"total": 100, "success": 90}
         monkeypatch.setattr(cache_module, "is_cache_enabled", lambda: True)
-        cache_module.metrics_cache.get = MagicMock(return_value=cached_data)
+        cache_module.metrics_cache.get_async = AsyncMock(return_value=cached_data)
 
         db = MagicMock()
         result = await tool_service.aggregate_metrics(db)
@@ -817,8 +817,8 @@ class TestAggregateMetrics:
         from mcpgateway.cache import metrics_cache as cache_module
 
         monkeypatch.setattr(cache_module, "is_cache_enabled", lambda: True)
-        cache_module.metrics_cache.get = MagicMock(return_value=None)
-        cache_module.metrics_cache.set = MagicMock()
+        cache_module.metrics_cache.get_async = AsyncMock(return_value=None)
+        cache_module.metrics_cache.set_async = AsyncMock()
 
         mock_result = MagicMock()
         mock_result.to_dict.return_value = {"total": 50}
@@ -887,6 +887,8 @@ class TestGetToolDeleteTool:
         mock_admin_cache = MagicMock()
         mock_admin_cache.invalidate_tags = AsyncMock()
         mock_metrics_cache = MagicMock()
+        mock_metrics_cache.invalidate_prefix_async = AsyncMock()
+        mock_metrics_cache.invalidate_async = AsyncMock()
 
         with (
             patch("mcpgateway.services.tool_service._get_registry_cache") as mock_rc,
@@ -1373,8 +1375,8 @@ class TestGetTopTools:
         from mcpgateway.cache import metrics_cache as cache_module
 
         monkeypatch.setattr(cache_module, "is_cache_enabled", lambda: True)
-        cache_module.metrics_cache.get = MagicMock(return_value=None)
-        cache_module.metrics_cache.set = MagicMock()
+        cache_module.metrics_cache.get_async = AsyncMock(return_value=None)
+        cache_module.metrics_cache.set_async = AsyncMock()
 
         mock_results = []
         monkeypatch.setattr("mcpgateway.services.tool_service.get_top_performers_combined", MagicMock(return_value=mock_results))
@@ -1382,7 +1384,7 @@ class TestGetTopTools:
 
         result = await tool_service.get_top_tools(MagicMock(), limit=3)
         assert result == []
-        cache_module.metrics_cache.set.assert_called_once()
+        cache_module.metrics_cache.set_async.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_top_tools_cache_disabled(self, tool_service, monkeypatch):
@@ -2947,6 +2949,8 @@ class TestDeleteToolPermissionAndPurge:
 
         mock_admin_cache = AsyncMock()
         mock_metrics_cache = MagicMock()
+        mock_metrics_cache.invalidate_prefix_async = AsyncMock()
+        mock_metrics_cache.invalidate_async = AsyncMock()
 
         with patch("mcpgateway.services.tool_service.delete_metrics_in_batches") as mock_delete, \
              patch("mcpgateway.services.tool_service.pause_rollup_during_purge") as mock_pause, \
@@ -3145,7 +3149,7 @@ class TestGetTopToolsCacheHit:
         cached_data = [{"tool_id": "1", "count": 10}]
         with patch("mcpgateway.cache.metrics_cache.is_cache_enabled", return_value=True), \
              patch("mcpgateway.cache.metrics_cache.metrics_cache") as mock_cache:
-            mock_cache.get = MagicMock(return_value=cached_data)
+            mock_cache.get_async = AsyncMock(return_value=cached_data)
             db = MagicMock()
             result = await tool_service.get_top_tools(db)
         assert result == cached_data
