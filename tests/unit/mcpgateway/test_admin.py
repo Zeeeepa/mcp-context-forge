@@ -154,6 +154,7 @@ from mcpgateway.admin import (  # admin_get_metrics,
     admin_teams_partial_html,
     admin_test_a2a_agent,
     admin_tokens_partial_html,
+    admin_search_tokens,
     admin_test_gateway,
     admin_test_resource,
     admin_tool_ops_partial,
@@ -14629,3 +14630,221 @@ class TestAdminTokensPartialHtml:
             user={"email": "user@example.com", "db": mock_db},
         )
         assert isinstance(response, HTMLResponse)
+
+
+# --------------------------------------------------------------------------- #
+# Admin Tokens Search Tests                                                   #
+# --------------------------------------------------------------------------- #
+class TestAdminTokensSearch:
+    """Test the admin_search_tokens function."""
+
+    @pytest.mark.asyncio
+    async def test_admin_search_tokens_basic(self, monkeypatch, mock_db):
+        """Test basic token search by name."""
+        mock_token = MagicMock()
+        mock_token.id = "token-1"
+        mock_token.name = "Production Token"
+        mock_token.user_email = "user@example.com"
+        mock_token.team_id = None
+        mock_token.description = "Production API token"
+        mock_token.created_at = datetime.now(timezone.utc)
+        mock_token.expires_at = None
+        mock_token.last_used = None
+        mock_token.is_active = True
+        mock_token.tags = ["prod"]
+        mock_token.server_id = None
+        mock_token.resource_scopes = []
+        mock_token.ip_restrictions = []
+        mock_token.time_restrictions = {}
+        mock_token.usage_limits = {}
+        mock_token.jti = "jti-123"
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [mock_token]
+        mock_db.execute.return_value = mock_result
+
+        # Mock TokenCatalogService
+        mock_token_service = MagicMock()
+        mock_token_service.get_token_revocation = AsyncMock(return_value=None)
+        monkeypatch.setattr("mcpgateway.admin.TokenCatalogService", lambda db: mock_token_service)
+
+        result = await admin_search_tokens(
+            q="Production",
+            include_inactive=False,
+            limit=10,
+            db=mock_db,
+            user={"email": "user@example.com", "db": mock_db},
+        )
+
+        assert len(result) == 1
+        assert result[0]["name"] == "Production Token"
+        assert result[0]["is_revoked"] is False
+
+    @pytest.mark.asyncio
+    async def test_admin_search_tokens_with_revoked(self, monkeypatch, mock_db):
+        """Test token search including revoked tokens."""
+        mock_token = MagicMock()
+        mock_token.id = "token-1"
+        mock_token.name = "Revoked Token"
+        mock_token.user_email = "user@example.com"
+        mock_token.team_id = None
+        mock_token.description = None
+        mock_token.created_at = datetime.now(timezone.utc)
+        mock_token.expires_at = None
+        mock_token.last_used = None
+        mock_token.is_active = False
+        mock_token.tags = []
+        mock_token.server_id = None
+        mock_token.resource_scopes = []
+        mock_token.ip_restrictions = []
+        mock_token.time_restrictions = {}
+        mock_token.usage_limits = {}
+        mock_token.jti = "jti-123"
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [mock_token]
+        mock_db.execute.return_value = mock_result
+
+        # Mock TokenCatalogService with revoked token
+        mock_revocation = MagicMock()
+        mock_revocation.revoked_at = datetime.now(timezone.utc)
+        mock_revocation.revoked_by = "admin@example.com"
+        mock_revocation.reason = "Security concern"
+
+        mock_token_service = MagicMock()
+        mock_token_service.get_token_revocation = AsyncMock(return_value=mock_revocation)
+        monkeypatch.setattr("mcpgateway.admin.TokenCatalogService", lambda db: mock_token_service)
+
+        result = await admin_search_tokens(
+            q="Revoked",
+            include_inactive=True,
+            limit=10,
+            db=mock_db,
+            user={"email": "user@example.com", "db": mock_db},
+        )
+
+        assert len(result) == 1
+        assert result[0]["name"] == "Revoked Token"
+        assert result[0]["is_revoked"] is True
+
+    @pytest.mark.asyncio
+    async def test_admin_search_tokens_empty_query(self, monkeypatch, mock_db):
+        """Test token search with empty query returns all tokens."""
+        mock_token1 = MagicMock()
+        mock_token1.id = "token-1"
+        mock_token1.name = "Token One"
+        mock_token1.user_email = "user@example.com"
+        mock_token1.team_id = None
+        mock_token1.description = None
+        mock_token1.created_at = datetime.now(timezone.utc)
+        mock_token1.expires_at = None
+        mock_token1.last_used = None
+        mock_token1.is_active = True
+        mock_token1.tags = []
+        mock_token1.server_id = None
+        mock_token1.resource_scopes = []
+        mock_token1.ip_restrictions = []
+        mock_token1.time_restrictions = {}
+        mock_token1.usage_limits = {}
+        mock_token1.jti = "jti-123"
+
+        mock_token2 = MagicMock()
+        mock_token2.id = "token-2"
+        mock_token2.name = "Token Two"
+        mock_token2.user_email = "user@example.com"
+        mock_token2.team_id = None
+        mock_token2.description = None
+        mock_token2.created_at = datetime.now(timezone.utc)
+        mock_token2.expires_at = None
+        mock_token2.last_used = None
+        mock_token2.is_active = True
+        mock_token2.tags = []
+        mock_token2.server_id = None
+        mock_token2.resource_scopes = []
+        mock_token2.ip_restrictions = []
+        mock_token2.time_restrictions = {}
+        mock_token2.usage_limits = {}
+        mock_token2.jti = "jti-456"
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [mock_token1, mock_token2]
+        mock_db.execute.return_value = mock_result
+
+        # Mock TokenCatalogService
+        mock_token_service = MagicMock()
+        mock_token_service.get_token_revocation = AsyncMock(return_value=None)
+        monkeypatch.setattr("mcpgateway.admin.TokenCatalogService", lambda db: mock_token_service)
+
+        result = await admin_search_tokens(
+            q="",
+            include_inactive=False,
+            limit=10,
+            db=mock_db,
+            user={"email": "user@example.com", "db": mock_db},
+        )
+
+        assert len(result) == 2
+
+    @pytest.mark.asyncio
+    async def test_admin_search_tokens_no_results(self, monkeypatch, mock_db):
+        """Test token search with no matching results."""
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = []
+        mock_db.execute.return_value = mock_result
+
+        # Mock TokenCatalogService
+        mock_token_service = MagicMock()
+        mock_token_service.get_token_revocation = AsyncMock(return_value=None)
+        monkeypatch.setattr("mcpgateway.admin.TokenCatalogService", lambda db: mock_token_service)
+
+        result = await admin_search_tokens(
+            q="NonExistent",
+            include_inactive=False,
+            limit=10,
+            db=mock_db,
+            user={"email": "user@example.com", "db": mock_db},
+        )
+
+        assert len(result) == 0
+
+    @pytest.mark.asyncio
+    async def test_admin_search_tokens_with_team(self, monkeypatch, mock_db):
+        """Test token search with team_id."""
+        mock_token = MagicMock()
+        mock_token.id = "token-1"
+        mock_token.name = "Team Token"
+        mock_token.user_email = "user@example.com"
+        mock_token.team_id = "team-123"
+        mock_token.description = None
+        mock_token.created_at = datetime.now(timezone.utc)
+        mock_token.expires_at = None
+        mock_token.last_used = None
+        mock_token.is_active = True
+        mock_token.tags = ["team"]
+        mock_token.server_id = None
+        mock_token.resource_scopes = []
+        mock_token.ip_restrictions = []
+        mock_token.time_restrictions = {}
+        mock_token.usage_limits = {}
+        mock_token.jti = "jti-123"
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [mock_token]
+        mock_db.execute.return_value = mock_result
+
+        # Mock TokenCatalogService
+        mock_token_service = MagicMock()
+        mock_token_service.get_token_revocation = AsyncMock(return_value=None)
+        monkeypatch.setattr("mcpgateway.admin.TokenCatalogService", lambda db: mock_token_service)
+
+        result = await admin_search_tokens(
+            q="Team",
+            include_inactive=False,
+            limit=10,
+            db=mock_db,
+            user={"email": "user@example.com", "db": mock_db},
+        )
+
+        assert len(result) == 1
+        assert result[0]["team_id"] == "team-123"
+        assert result[0]["tags"] == ["team"]
