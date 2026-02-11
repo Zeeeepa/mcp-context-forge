@@ -354,6 +354,8 @@ class TestInitializeShutdown:
     def test_init_plugins_enabled_env_true(self, monkeypatch):
         """PLUGINS_ENABLED=true env should enable plugin manager."""
         monkeypatch.setenv("PLUGINS_ENABLED", "true")
+        from mcpgateway.plugins.framework.settings import PluginsSettings
+        monkeypatch.setattr("mcpgateway.plugins.framework.settings.settings", PluginsSettings())
         with patch("mcpgateway.services.tool_service.PluginManager") as mock_pm:
             service = ToolService()
         assert service._plugin_manager is not None
@@ -362,6 +364,8 @@ class TestInitializeShutdown:
     def test_init_plugins_enabled_env_false(self, monkeypatch):
         """PLUGINS_ENABLED=false env should disable plugin manager."""
         monkeypatch.setenv("PLUGINS_ENABLED", "false")
+        from mcpgateway.plugins.framework.settings import PluginsSettings
+        monkeypatch.setattr("mcpgateway.plugins.framework.settings.settings", PluginsSettings())
         with patch("mcpgateway.services.tool_service.PluginManager") as mock_pm:
             service = ToolService()
         assert service._plugin_manager is None
@@ -370,6 +374,8 @@ class TestInitializeShutdown:
     def test_init_plugins_enabled_env_on(self, monkeypatch):
         """PLUGINS_ENABLED=on env should enable plugin manager."""
         monkeypatch.setenv("PLUGINS_ENABLED", "on")
+        from mcpgateway.plugins.framework.settings import PluginsSettings
+        monkeypatch.setattr("mcpgateway.plugins.framework.settings.settings", PluginsSettings())
         with patch("mcpgateway.services.tool_service.PluginManager") as mock_pm:
             service = ToolService()
         assert service._plugin_manager is not None
@@ -377,6 +383,8 @@ class TestInitializeShutdown:
     def test_init_plugins_enabled_env_off(self, monkeypatch):
         """PLUGINS_ENABLED=off env should disable plugin manager."""
         monkeypatch.setenv("PLUGINS_ENABLED", "off")
+        from mcpgateway.plugins.framework.settings import PluginsSettings
+        monkeypatch.setattr("mcpgateway.plugins.framework.settings.settings", PluginsSettings())
         with patch("mcpgateway.services.tool_service.PluginManager") as mock_pm:
             service = ToolService()
         assert service._plugin_manager is None
