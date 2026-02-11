@@ -1386,3 +1386,157 @@ class TestTokenCatalogServiceSqlOptimization:
         assert stats["total_requests"] == 0
         assert stats["successful_requests"] == 0
         assert stats["success_rate"] == 0
+
+
+# --------------------------------------------------------------------------- #
+# Token Count Tests                                                           #
+# --------------------------------------------------------------------------- #
+class TestTokenCountFunctions:
+    """Tests for token counting functions."""
+
+    @pytest.mark.asyncio
+    async def test_count_user_tokens_include_inactive(self, mock_db):
+        """Test counting user tokens including inactive ones."""
+        service = TokenCatalogService(mock_db)
+
+        # Mock the query result
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = 5
+        mock_db.execute.return_value = mock_result
+
+        count = await service.count_user_tokens("test@example.com", include_inactive=True)
+
+        assert count == 5
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_count_user_tokens_active_only(self, mock_db):
+        """Test counting only active user tokens."""
+        service = TokenCatalogService(mock_db)
+
+        # Mock the query result
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = 3
+        mock_db.execute.return_value = mock_result
+
+        count = await service.count_user_tokens("test@example.com", include_inactive=False)
+
+        assert count == 3
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_count_user_tokens_returns_zero(self, mock_db):
+        """Test counting user tokens when none exist."""
+        service = TokenCatalogService(mock_db)
+
+        # Mock the query result returning None
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = None
+        mock_db.execute.return_value = mock_result
+
+        count = await service.count_user_tokens("test@example.com")
+
+        assert count == 0
+
+    @pytest.mark.asyncio
+    async def test_count_team_tokens_include_inactive(self, mock_db):
+        """Test counting team tokens including inactive ones."""
+        service = TokenCatalogService(mock_db)
+
+        # Mock the query result
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = 10
+        mock_db.execute.return_value = mock_result
+
+        count = await service.count_team_tokens("team-123", include_inactive=True)
+
+        assert count == 10
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_count_team_tokens_active_only(self, mock_db):
+        """Test counting only active team tokens."""
+        service = TokenCatalogService(mock_db)
+
+        # Mock the query result
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = 7
+        mock_db.execute.return_value = mock_result
+
+        count = await service.count_team_tokens("team-123", include_inactive=False)
+
+        assert count == 7
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_count_team_tokens_returns_zero(self, mock_db):
+        """Test counting team tokens when none exist."""
+        service = TokenCatalogService(mock_db)
+
+        # Mock the query result returning None
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = None
+        mock_db.execute.return_value = mock_result
+
+        count = await service.count_team_tokens("team-123")
+
+        assert count == 0
+
+    @pytest.mark.asyncio
+    async def test_count_user_tokens_by_team_with_team_filter(self, mock_db):
+        """Test counting user tokens filtered by team."""
+        service = TokenCatalogService(mock_db)
+
+        # Mock the query result
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = 4
+        mock_db.execute.return_value = mock_result
+
+        count = await service.count_user_tokens_by_team("test@example.com", team_id="team-123", include_inactive=True)
+
+        assert count == 4
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_count_user_tokens_by_team_all_teams(self, mock_db):
+        """Test counting all user tokens across teams."""
+        service = TokenCatalogService(mock_db)
+
+        # Mock the query result
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = 8
+        mock_db.execute.return_value = mock_result
+
+        count = await service.count_user_tokens_by_team("test@example.com", team_id=None, include_inactive=True)
+
+        assert count == 8
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_count_user_tokens_by_team_active_only(self, mock_db):
+        """Test counting active user tokens by team."""
+        service = TokenCatalogService(mock_db)
+
+        # Mock the query result
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = 6
+        mock_db.execute.return_value = mock_result
+
+        count = await service.count_user_tokens_by_team("test@example.com", team_id="team-123", include_inactive=False)
+
+        assert count == 6
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_count_user_tokens_by_team_returns_zero(self, mock_db):
+        """Test counting user tokens by team when none exist."""
+        service = TokenCatalogService(mock_db)
+
+        # Mock the query result returning None
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = None
+        mock_db.execute.return_value = mock_result
+
+        count = await service.count_user_tokens_by_team("test@example.com")
+
+        assert count == 0
